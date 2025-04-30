@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro de Clima</title>
+  <style>
+    /* Estilos internos */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #e0f7fa;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #006064;
+      text-align: center;
+      font-size: 2.5em;
+    }
+
+    h2, h3 {
+      margin-bottom: 15px;
+      color: #00796b;
+      text-align: center;
+    }
+
+    section {
+      background: #ffffff;
+      padding: 25px;
+      margin: 30px auto;
+      max-width: 1000px;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, select, button {
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #00acc1;
+      background-color: #f1fafd;
+    }
+
+    button {
+      background-color: #00796b;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #004d40;
+      transform: scale(1.05);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #00796b;
+      color: white;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f1fafa;
+    }
+
+    tbody tr:hover {
+      background-color: #e0f7fa;
+    }
+
+    @media (max-width: 768px) {
+      .form-group {
+        flex-direction: column;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🌦️ Sistema de Registros Climáticos</h1>
+
+  <section class="localidades">
+    <h2>Adicionar Localidade</h2>
+    <div class="form-group">
+      <input type="text" id="nomeLocalidade" placeholder="Nome da Cidade">
+      <input type="text" id="estadoLocalidade" placeholder="Estado (UF)">
+      <input type="text" id="paisLocalidade" placeholder="País">
+      <button id="btnAddLocalidade">Adicionar</button>
+    </div>
+
+    <h3>Lista de Localidades</h3>
+    <table id="tabelaLocalidades">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Estado</th>
+          <th>País</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="registros">
+    <h2>Adicionar Registro Climático</h2>
+    <div class="form-group">
+      <input type="time" id="horarioRegistro">
+      <input type="date" id="dataRegistro">
+      <input type="number" id="temperaturaRegistro" placeholder="Temperatura (°C)">
+      <select id="localidadeRegistro"></select>
+      <button id="btnAddRegistro">Registrar</button>
+    </div>
+
+    <h3>Lista de Registros</h3>
+    <select id="filtroEstado"></select>
+    <p id="contadorRegistros">Mostrando 0 registros.</p>
+    
+
+    <table id="tabelaRegistros">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Data</th>
+          <th>Horário</th>
+          <th>Temperatura</th>
+          <th>Localidade</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:3000';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarLocalidades();
+      carregarRegistros();
+
+      document.getElementById('btnAddLocalidade').addEventListener('click', adicionarLocalidade);
+      document.getElementById('btnAddRegistro').addEventListener('click', adicionarRegistro);
+    });
+
+    async function carregarLocalidades() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/localidade`);
+        const localidades = await res.json();
+        const tabela = document.querySelector('#tabelaLocalidades tbody');
+        tabela.innerHTML = '';
+
+        localidades.forEach(localidade => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${localidade.id_localidades}</td>
+            <td>${localidade.nome}</td>
+            <td>${localidade.estado}</td>
+            <td>${localidade.pais}</td>
+          `;
+          tabela.appendChild(row);
+        });
+
+        atualizarDropdownLocalidades(localidades);
+      } catch (err) {
+        console.error('Erro:', err);
+      }
+    }
+
+    async function adicionarLocalidade() {
+      const nome = document.getElementById('nomeLocalidade').value.trim();
+      const estado = document.getElementById('estadoLocalidade').value.trim();
+      const pais = document.getElementById('paisLocalidade').value.trim();
+
+      if (!nome || !estado || !pais) return alert('Preencha todos os campos!');
+
+      try {
+        await fetch(`${API_BASE_URL}/localidade`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, estado, pais })
+        });
+
+        document.getElementById('nomeLocalidade').value = '';
+        document.getElementById('estadoLocalidade').value = '';
+        document.getElementById('paisLocalidade').value = '';
+
+        carregarLocalidades();
+        alert('Localidade adicionada!');
+      } catch (err) {
+        console.error('Erro:', err);
+      }
+    }
+
+    function atualizarDropdownLocalidades(localidades) {
+      const dropdown = document.getElementById('localidadeRegistro');
+      dropdown.innerHTML = '<option value="">Selecione uma localidade</option>';
+
+      localidades.forEach(loc => {
+        const option = document.createElement('option');
+        option.value = loc.id_localidades;
+        option.textContent = `${loc.nome} - ${loc.estado}`;
+        dropdown.appendChild(option);
+      });
+    }
+
+    // 🆕 SUA FUNÇÃO NOVA IMPLEMENTADA AQUI:
+    async function carregarRegistros() {
+      try {
+        const registrosRes = await fetch(`${API_BASE_URL}/registro`);
+        const registros = await registrosRes.json();
+
+        const tabela = document.querySelector('#tabelaRegistros tbody');
+        tabela.innerHTML = '';
+
+        registros.forEach(registro => {
+          const data = registro.data?.split('T')[0] || 'N/A'; // Formata data
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${registro.id_registro}</td>
+            <td>${data}</td>
+            <td>${registro.horario || 'N/A'}</td>
+            <td>${registro.temperatura != null ? registro.temperatura + '°C' : 'N/A'}</td>
+            <td>${registro.nome_localidade} - ${registro.estado_localidade}</td>
+          `;
+          tabela.appendChild(row);
+        });
+      } catch (err) {
+        console.error('Erro:', err);
+      }
+    }
+
+    async function adicionarRegistro() {
+      const horario = document.getElementById('horarioRegistro').value;
+      const data = document.getElementById('dataRegistro').value;
+      const temperatura = parseFloat(document.getElementById('temperaturaRegistro').value);
+      const localidadeId = document.getElementById('localidadeRegistro').value;
+
+      if (!horario || !data || isNaN(temperatura) || !localidadeId) {
+        return alert('Preencha todos os campos corretamente!');
+      }
+
+      try {
+        await fetch(`${API_BASE_URL}/registro`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            horario,
+            data,
+            temperatura,
+            Localidades_id_localidades: parseInt(localidadeId)
+          })
+        });
+
+        document.getElementById('horarioRegistro').value = '';
+        document.getElementById('dataRegistro').value = '';
+        document.getElementById('temperaturaRegistro').value = '';
+        document.getElementById('localidadeRegistro').value = '';
+
+        carregarRegistros();
+        alert('Registro adicionado!');
+      } catch (err) {
+        console.error('Erro:', err);
+      }
+    }
+  </script>
+
+</body>
+</html>
