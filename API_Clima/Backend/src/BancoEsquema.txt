@@ -1,0 +1,59 @@
+esquema banco de dados
+
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Schema api_climatica
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema api_climatica
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `api_climatica` DEFAULT CHARACTER SET utf8 ;
+USE `api_climatica` ;
+
+-- -----------------------------------------------------
+-- Table `api_climatica`.`localidades`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `api_climatica`.`localidades` (
+  `id_localidades` INT(11) NOT NULL AUTO_INCREMENT,
+  `nome` VARCHAR(255) NOT NULL,
+  `estado` VARCHAR(255) NOT NULL,
+  `pais` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`id_localidades`))
+ENGINE = InnoDB
+AUTO_INCREMENT = 27
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `api_climatica`.`registro`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `api_climatica`.`registro` (
+  `id_registro` INT(11) NOT NULL AUTO_INCREMENT,
+  `data` DATE NOT NULL,
+  `horario` TIME NOT NULL,
+  `temperatura` VARCHAR(45) NOT NULL,
+  `localidades_id_localidades` INT(11) NOT NULL,
+  PRIMARY KEY (`id_registro`),
+  INDEX `fk_registro_localidades_idx` (`localidades_id_localidades` ASC),
+  CONSTRAINT `fk_registro_localidades`
+    FOREIGN KEY (`localidades_id_localidades`)
+    REFERENCES `api_climatica`.`localidades` (`id_localidades`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
+AUTO_INCREMENT = 1515
+DEFAULT CHARACTER SET = utf8;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

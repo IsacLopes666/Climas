@@ -17,11 +17,12 @@ async function carregarLocalidades() {
 
 async function carregarRegistros() {
     try {
-        const response = await fetch(`${API_BASE_URL}/registro`);
-        if (!response.ok) throw new Error('Erro ao carregar registros');
-        const registros = await response.json();
+        const [registros, localidades] = await Promise.all([
+            fetch(`${API_BASE_URL}/registro`).then(res => res.ok ? res.json() : Promise.reject('Erro ao carregar registros')),
+            fetch(`${API_BASE_URL}/localidade`).then(res => res.ok ? res.json() : Promise.reject('Erro ao carregar localidades'))
+        ]);
 
-        atualizarTabelaRegistros(registros);
+        atualizarTabelaRegistros(registros, localidades);
     } catch (error) {
         console.error('Erro ao carregar registros:', error);
         alert('Erro ao carregar registros: ' + error);
@@ -40,20 +41,22 @@ function atualizarTabelaLocalidades(localidades) {
             <td>${localidade.nome}</td>
             <td>${localidade.estado}</td>
             <td>${localidade.pais}</td>
-            <td><button onclick="excluirLocalidade(${localidade.id_localidades})" style="background-color: #e53935; color: white; border: none; padding: 5px 10px;">🗑️ Excluir</button></td>
         `;
         tabela.appendChild(row);
     });
 }
 
-function atualizarTabelaRegistros(registros) {
+function atualizarTabelaRegistros(registros, localidades) {
     const tabela = document.querySelector('#tabelaRegistros tbody');
     tabela.innerHTML = '';
 
     registros.forEach(registro => {
+        const localidade = localidades.find(l => l.id_localidades === registro.Localidades_id_Localidades);
+        const nomeLocalidade = localidade ? `${localidade.nome}, ${localidade.estado}` : 'Desconhecida';
+
         const dataObj = registro.data ? new Date(registro.data) : null;
         const dataFormatada = dataObj ?
-            `${dataObj.getFullYear()}-${(dataObj.getMonth() + 1).toString().padStart(2, '0')}-${dataObj.getDate().toString().padStart(2, '0')}` :
+            `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth() + 1).toString().padStart(2, '0')}/${dataObj.getFullYear()}` :
             'N/A';
 
         const row = document.createElement('tr');
@@ -62,8 +65,7 @@ function atualizarTabelaRegistros(registros) {
             <td>${dataFormatada}</td>
             <td>${registro.horario || 'N/A'}</td>
             <td>${registro.temperatura != null ? registro.temperatura + '°C' : 'N/A'}</td>
-            <td>${registro.nome_localidade} - ${registro.estado_localidade}</td>
-            <td><button onclick="excluirRegistro(${registro.id_registro})" style="background-color: #e53935; color: white; border: none; padding: 5px 10px;">🗑️ Excluir</button></td>
+            <td>${nomeLocalidade}</td>
         `;
         tabela.appendChild(row);
     });
@@ -143,50 +145,12 @@ async function adicionarRegistro() {
         document.getElementById('horarioRegistro').value = '';
         document.getElementById('dataRegistro').value = '';
         document.getElementById('temperaturaRegistro').value = '';
-        document.getElementById('localidadeRegistro').value = '';
 
         await carregarRegistros();
         alert('Registro adicionado com sucesso!');
     } catch (error) {
         console.error('Erro ao adicionar registro:', error);
         alert('Erro ao adicionar registro: ' + error.message);
-    }
-}
-
-// Excluir localidade
-async function excluirLocalidade(id) {
-    if (!confirm('Tem certeza que deseja excluir esta localidade?')) return;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/localidade/${id}`, {
-            method: 'DELETE'
-        });
-        if (!response.ok) throw new Error('Erro ao excluir localidade');
-
-        alert('Localidade excluída!');
-        carregarLocalidades();
-        carregarRegistros();
-    } catch (error) {
-        console.error('Erro ao excluir localidade:', error);
-        alert('Erro ao excluir localidade: ' + error.message);
-    }
-}
-
-// Excluir registro
-async function excluirRegistro(id) {
-    if (!confirm('Tem certeza que deseja excluir este registro?')) return;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/registro/${id}`, {
-            method: 'DELETE'
-        });
-        if (!response.ok) throw new Error('Erro ao excluir registro');
-
-        alert('Registro excluído!');
-        carregarRegistros();
-    } catch (error) {
-        console.error('Erro ao excluir registro:', error);
-        alert('Erro ao excluir registro: ' + error.message);
     }
 }
 
@@ -205,3 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAddRegistro.addEventListener('click', adicionarRegistro);
     }
 });
+import { deleteLocalidade, deleteRegistro } from './Controller/ClimaController.js';
+
+// Deletar localidade e registro
+app.delete('/localidade/:id', deleteLocalidade);
+app.delete('/registro/:id', deleteRegistro);
